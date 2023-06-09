@@ -28,8 +28,10 @@ async function run() {
     await client.connect();
 
     const userCollection = client.db("frippoDb").collection("user");
+    const classCollection = client.db("frippoDb").collection("classes");
 
-// user related api
+
+//! user related api
 app.post('/user', async (req, res) => {
     const user = req.body;
     console.log('user', user)
@@ -43,7 +45,33 @@ app.post('/user', async (req, res) => {
     res.send(result);
 })
 
+// ! class related api
+ // for getting all the classes
+ app.get('/classes', async (req, res) => {
+  const result = await classCollection.find().toArray();
+  res.send(result);
+});
 
+
+
+ // show all the approved classes
+ app.get('/approved-classes', async (req, res) => {
+  const result = await classCollection.find({ status: 'approved' }).toArray();
+  res.send(result);
+});
+
+
+
+ // getting the first 6 popular classes sort by number of enrolled students
+ app.get('/popular-classes', async (req, res) => {
+  try {
+      const popularClasses = await classCollection.find().sort({ numberOfStudents: -1 }).limit(6).toArray();
+      res.send(popularClasses);
+  } catch (err) {
+      console.error(err);
+      res.status(500).send('Internal server error');
+  }
+});
 
 
 
