@@ -52,7 +52,12 @@ app.post('/user', async (req, res) => {
   res.send(result);
 });
 
-
+// posting new class
+app.post('/classes', async (req, res) => {
+  const classData = req.body;
+  const result = await classCollection.insertOne(classData);
+  res.send(result);
+});
 
  // show all the approved classes
  app.get('/approved-classes', async (req, res) => {
