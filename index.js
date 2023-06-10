@@ -10,7 +10,7 @@ app.use(express.json());
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ixkqk3t.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -27,12 +27,18 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+    // collections
     const userCollection = client.db("frippoDb").collection("user");
     const classCollection = client.db("frippoDb").collection("classes");
 
 
 //! user related api
-app.post('/user', async (req, res) => {
+app.get('/users', async (req, res) => {
+  const result = await userCollection.find().toArray();
+  res.send(result);
+});
+        //storing user data in database
+app.post('/users', async (req, res) => {
     const user = req.body;
     console.log('user', user)
     const query = {email: user.email};
@@ -44,6 +50,40 @@ app.post('/user', async (req, res) => {
     const result = await userCollection.insertOne(user);
     res.send(result);
 })
+
+      // setting  a user role to admin
+      app.patch('/users/admin/:id', async (req, res) => {
+        const id = req.params.id;
+        console.log(id);
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+            $set: {
+                role: 'admin'
+            },
+        };
+
+        const result = await userCollection.updateOne(filter, updateDoc);
+        res.send(result);
+
+    });
+
+ // setting  a user role to instructor
+ app.patch('/users/instructor/:id', async (req, res) => {
+  const id = req.params.id;
+  console.log(id);
+  const filter = { _id: new ObjectId(id) };
+  const updateDoc = {
+      $set: {
+          role: 'instructor'
+      },
+  };
+
+  const result = await userCollection.updateOne(filter, updateDoc);
+  res.send(result);
+
+});
+
+
 
 // ! class related api
  // for getting all the classes
@@ -74,9 +114,12 @@ app.post('/classes', async (req, res) => {
       res.send(popularClasses);
   } catch (err) {
       console.error(err);
-      res.status(500).send('Internal server error');
+      res.status(400).send('Internal server error');
   }
 });
+
+
+
 
 
 
