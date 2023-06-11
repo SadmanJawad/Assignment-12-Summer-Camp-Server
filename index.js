@@ -131,6 +131,46 @@ app.post('/classes', async (req, res) => {
 
 
 
+ // changing class  to approved put method
+ app.put('/classes/approved/:id', async (req, res) => {
+  const id = req.params.id;
+  const filter = { _id: new ObjectId(id) };
+  const updateDoc = {
+      $set: {
+          status: 'approved'
+      },
+  };
+  const result = await classCollection.updateOne(filter, updateDoc);
+  res.send(result);
+});
+// changing class to deny , put method
+app.put('/classes/denied/:id', async (req, res) => {
+  const id = req.params.id;
+  const filter = { _id: new ObjectId(id) };
+  const updateDoc = {
+      $set: {
+          status: 'denied'
+      },
+  };
+  const result = await classCollection.updateOne(filter, updateDoc);
+  res.send(result);
+});
+// inserting feedback to a class
+app.put('/classes/feedback/:id', async (req, res) => {
+  const id = req.params.id;
+  const feedback = req.body;
+  const filter = { _id: new ObjectId(id) };
+  const updateDoc = {
+      $set: {
+          feedback: feedback.inputValue
+      },
+  };
+  const result = await classCollection.updateOne(filter, updateDoc);
+  res.send(result);
+});
+
+
+
 
 
 
