@@ -129,6 +129,12 @@ app.post('/classes', async (req, res) => {
   }
 });
 
+  // get classes according to the instructor email
+  app.get('/classes/:email', async (req, res) => {
+    const email = req.params.email;
+    const result = await classCollection.find({ instructorEmail: email }).toArray();
+    res.send(result);
+});
 
 
  // changing class  to approved put method
