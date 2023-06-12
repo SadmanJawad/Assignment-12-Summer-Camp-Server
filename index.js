@@ -31,6 +31,8 @@ async function run() {
     // collections
     const userCollection = client.db("frippoDb").collection("user");
     const classCollection = client.db("frippoDb").collection("classes");
+    const selectedCollection = client.db("frippoDb").collection("selected");
+
 
     
     app.post('/jwt', (req, res) => {
@@ -177,6 +179,106 @@ app.put('/classes/feedback/:id', async (req, res) => {
 
 
 
+
+
+
+
+
+        // ! instructor related apis
+        // for getting all the instructors
+        app.get('/instructors', async (req, res) => {
+          const pipeline = [
+              {
+                  $lookup: {
+                      from: "classes",
+                      localField: "email",
+                      foreignField: "instructorEmail",
+                      as: "classes",
+                  },
+              },
+              {
+                  $project: {
+                      _id: 0,
+                      name: 1,
+                      email: 1,
+                      photoURL: 1,
+                      numberOfClasses: {
+                          $cond: {
+                              if: { $isArray: "$classes" },
+                              then: { $size: "$classes" },
+                              else: 0,
+                          },
+                      },
+                      classes: {
+                          $cond: {
+                              if: { $isArray: "$classes" },
+                              then: "$classes.name",
+                              else: [],
+                          },
+                      },
+                  },
+              },
+          ];
+
+          const instructors = await userCollection.aggregate(pipeline).toArray();
+          res.send(instructors);
+      });
+
+
+        // getting the first 6 popular classes sort by number of class taken
+        app.get('/instructors/popular', async (req, res) => {
+          const pipeline = [
+              {
+                  $lookup: {
+                      from: "classes",
+                      localField: "email",
+                      foreignField: "instructorEmail",
+                      as: "classes",
+                  },
+              },
+              {
+                  $project: {
+                      _id: 0,
+                      name: 1,
+                      photoURL: 1,
+                      numberOfStudents: {
+                          $cond: {
+                              if: { $isArray: "$classes" },
+                              then: { $sum: "$classes.numberOfStudents" },
+                              else: 0,
+                          },
+                      },
+                      numberOfClasses: {
+                          $cond: {
+                              if: { $isArray: "$classes" },
+                              then: { $size: "$classes" },
+                              else: 0,
+                          },
+                      },
+                      classes: {
+                          $cond: {
+                              if: { $isArray: "$classes" },
+                              then: { $arrayElemAt: ["$classes.name", 0] },
+                              else: "",
+                          },
+                      },
+                  },
+              },
+              { $sort: { numberOfStudents: -1 } },
+              { $limit: 6 },
+          ];
+
+          const instructors = await userCollection.aggregate(pipeline).toArray();
+          res.send(instructors);
+      });
+
+ // ! selected classes related apis
+        // post selected class to database
+        app.post('/classes/selected', async (req, res) => {
+            const selectedClass = req.body;
+            const result = await selectedCollection.insertOne(selectedClass);
+            res.send(result);
+        });
 
 
 
