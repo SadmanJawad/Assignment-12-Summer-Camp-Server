@@ -32,6 +32,8 @@ async function run() {
     const userCollection = client.db("frippoDb").collection("user");
     const classCollection = client.db("frippoDb").collection("classes");
     const selectedCollection = client.db("frippoDb").collection("selected");
+    const enrolledCollection = client.db("MelodyMaster").collection("enrolled");
+
 
 
     
@@ -300,6 +302,25 @@ app.put('/classes/feedback/:id', async (req, res) => {
           const instructors = await userCollection.aggregate(pipeline).toArray();
           res.send(instructors);
       });
+
+
+
+       //! create payment intent
+       app.post('/create-payment-intent',verifyJWT, async (req, res) => {
+        const { price } = req.body;
+
+        const amount = parseInt(price * 100);
+        console.log(price, amount)
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: amount,
+            currency: "usd",
+            payment_method_types: ["card"],
+        });
+        res.send({
+            clientSecret: paymentIntent.client_secret,
+        });
+
+    });
 
    // getting enrolled class by email
         app.get('/enrolled/:email', async (req, res) => {
