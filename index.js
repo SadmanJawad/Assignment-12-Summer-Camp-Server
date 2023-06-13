@@ -177,14 +177,43 @@ app.put('/classes/feedback/:id', async (req, res) => {
   res.send(result);
 });
 
+// ! selected classes related apis
+        // post selected class to database
+        app.post('/classes/selected', async (req, res) => {
+            const selectedClass = req.body;
+            const result = await selectedCollection.insertOne(selectedClass);
+            res.send(result);
+        });
+
+                // get selected class by email
+                app.get('/classes/selected/:email', async (req, res) => {
+                    const email = req.params.email;
+                    const query = { userEmail: email }
+                    const result = await selectedCollection.find(query).toArray();
+                    res.send(result);
+                });
+                // get selected class by id
+                app.get('/classes/get/:id', async (req, res) => {
+                    const id = req.params.id;
+                    const query = { _id: new ObjectId(id) };
+                    const result = await selectedCollection.findOne(query);
+                    res.send(result);
+                });
+        
+                // deleting a selected class by id
+                app.delete('/classes/selected/:id', async (req, res) => {
+                    const id = req.params.id;
+                    const query = { _id: new ObjectId(id) }
+                    const result = await selectedCollection.deleteOne(query);
+                    res.send(result);
+                });
 
 
 
 
 
 
-
-        // ! instructor related apis
+// ! instructor related apis
         // for getting all the instructors
         app.get('/instructors', async (req, res) => {
           const pipeline = [
@@ -272,11 +301,11 @@ app.put('/classes/feedback/:id', async (req, res) => {
           res.send(instructors);
       });
 
- // ! selected classes related apis
-        // post selected class to database
-        app.post('/classes/selected', async (req, res) => {
-            const selectedClass = req.body;
-            const result = await selectedCollection.insertOne(selectedClass);
+   // getting enrolled class by email
+        app.get('/enrolled/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email }
+            const result = await enrolledCollection.find(query).toArray();
             res.send(result);
         });
 
