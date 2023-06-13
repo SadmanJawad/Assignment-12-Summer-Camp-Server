@@ -176,7 +176,7 @@ app.get('/users/instructor/:email', verifyJWT,verifyInstructor, async (req, res)
 
 // ! class related api
  // for getting all the classes
- app.get('/classes', async (req, res) => {
+ app.get('/classes',verifyJWT, verifyAdmin, async (req, res) => {
   const result = await classCollection.find().toArray();
   res.send(result);
 });
@@ -208,7 +208,7 @@ app.post('/classes', async (req, res) => {
 });
 
   // get classes according to the instructor email
-  app.get('/classes/:email', async (req, res) => {
+  app.get('/classes/:email',verifyJWT, verifyInstructor, async (req, res) => {
     const email = req.params.email;
     const result = await classCollection.find({ instructorEmail: email }).toArray();
     res.send(result);
@@ -216,7 +216,7 @@ app.post('/classes', async (req, res) => {
 
 
  // changing class  to approved put method
- app.put('/classes/approved/:id', async (req, res) => {
+ app.put('/classes/approved/:id',verifyJWT, verifyAdmin, async (req, res) => {
   const id = req.params.id;
   const filter = { _id: new ObjectId(id) };
   const updateDoc = {
@@ -228,7 +228,7 @@ app.post('/classes', async (req, res) => {
   res.send(result);
 });
 // changing class to deny , put method
-app.put('/classes/denied/:id', async (req, res) => {
+app.put('/classes/denied/:id',verifyJWT, verifyAdmin, async (req, res) => {
   const id = req.params.id;
   const filter = { _id: new ObjectId(id) };
   const updateDoc = {
@@ -240,7 +240,7 @@ app.put('/classes/denied/:id', async (req, res) => {
   res.send(result);
 });
 // inserting feedback to a class
-app.put('/classes/feedback/:id', async (req, res) => {
+app.put('/classes/feedback/:id',verifyJWT,verifyAdmin, async (req, res) => {
   const id = req.params.id;
   const feedback = req.body;
   const filter = { _id: new ObjectId(id) };
@@ -262,7 +262,7 @@ app.put('/classes/feedback/:id', async (req, res) => {
         });
 
                 // get selected class by email
-                app.get('/classes/selected/:email', async (req, res) => {
+                app.get('/classes/selected/:email',verifyJWT, async (req, res) => {
                     const email = req.params.email;
                     const query = { userEmail: email }
                     const result = await selectedCollection.find(query).toArray();
@@ -277,7 +277,7 @@ app.put('/classes/feedback/:id', async (req, res) => {
                 });
         
                 // deleting a selected class by id
-                app.delete('/classes/selected/:id', async (req, res) => {
+                app.delete('/classes/selected/:id',verifyJWT, async (req, res) => {
                     const id = req.params.id;
                     const query = { _id: new ObjectId(id) }
                     const result = await selectedCollection.deleteOne(query);
@@ -380,7 +380,7 @@ app.put('/classes/feedback/:id', async (req, res) => {
 
 
        //! create payment intent
-       app.post('/create-payment-intent', async (req, res) => {
+       app.post('/create-payment-intent',verifyJWT, async (req, res) => {
         const { price } = req.body;
 
         const amount = parseInt(price * 100);
@@ -398,7 +398,7 @@ app.put('/classes/feedback/:id', async (req, res) => {
 
 
      // to store payment info in enrolled and deleting the existing class from selected
-     app.post('/enrolled', async (req, res) => {
+     app.post('/enrolled',verifyJWT, async (req, res) => {
         try {
             const payment = req.body;
             const result = await enrolledCollection.insertOne(payment);
