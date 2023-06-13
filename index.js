@@ -4,12 +4,31 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config()
 const port = process.env.PORT || 5000;
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // middleware
 app.use(cors());
 app.use(express.json());
 
+// ! verify Jwt token
+const verifyJWT = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ error: true, message: "Unauthorized access" });
+    }
 
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(403).send({ error: true, message: "Forbidden access" });
+        }
+        req.decoded = decoded;
+        next();
+    });
+}
+
+
+// ! MongoDB connection
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ixkqk3t.mongodb.net/?retryWrites=true&w=majority`;
@@ -44,6 +63,27 @@ async function run() {
       res.send({ token })
   });
 
+       // Warning: use verifyJWT before using verifyAdmin from db
+       const verifyAdmin = async (req, res, next) => {
+        const email = req.decoded.email;
+        const query = { email: email }
+        const user = await userCollection.findOne(query);
+        if (user?.role !== 'admin') {
+            return res.status(403).send({ error: true, message: 'forbidden message' });
+        }
+        next();
+    }
+    // Warning: use verifyJWT before using verifyInstructor from db
+    const verifyInstructor = async (req, res, next) => {
+        const email = req.decoded.email;
+        const query = { email: email }
+        const user = await userCollection.findOne(query);
+        if (user?.role !== 'instructor') {
+            return res.status(403).send({ error: true, message: 'forbidden message' });
+        }
+        next();
+    }
+
 
 
 //! user related api
@@ -63,6 +103,40 @@ app.post('/users', async (req, res) => {
         return res.send({message: 'User already exists'})
     }
     const result = await userCollection.insertOne(user);
+    res.send(result);
+})
+
+  // get users by email
+  app.get('/users/:email', async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email }
+    const result = await userCollection.findOne(query);
+    res.send(result);
+});
+// get admin users by email
+app.get('/users/admin/:email', verifyJWT,verifyAdmin, async (req, res) => {
+    const email = req.params.email;
+
+    if (req.decoded.email !== email) {
+        res.send({ admin: false })
+    }
+
+    const query = { email: email }
+    const user = await userCollection.findOne(query);
+    const result = { admin: user?.role === 'admin' }
+    res.send(result);
+})
+// get Instructor users by email
+app.get('/users/instructor/:email', verifyJWT,verifyInstructor, async (req, res) => {
+    const email = req.params.email;
+
+    if (req.decoded.email !== email) {
+        res.send({ admin: false })
+    }
+
+    const query = { email: email }
+    const user = await userCollection.findOne(query);
+    const result = { admin: user?.role === 'instructor' }
     res.send(result);
 })
 
@@ -306,7 +380,7 @@ app.put('/classes/feedback/:id', async (req, res) => {
 
 
        //! create payment intent
-       app.post('/create-payment-intent',verifyJWT, async (req, res) => {
+       app.post('/create-payment-intent', async (req, res) => {
         const { price } = req.body;
 
         const amount = parseInt(price * 100);
@@ -324,7 +398,7 @@ app.put('/classes/feedback/:id', async (req, res) => {
 
 
      // to store payment info in enrolled and deleting the existing class from selected
-     app.post('/enrolled',verifyJWT, async (req, res) => {
+     app.post('/enrolled', async (req, res) => {
         try {
             const payment = req.body;
             const result = await enrolledCollection.insertOne(payment);
