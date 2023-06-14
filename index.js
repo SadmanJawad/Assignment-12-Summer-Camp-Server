@@ -300,7 +300,11 @@ app.put('/classes/feedback/:id',verifyJWT,verifyAdmin, async (req, res) => {
 
         // getting the first 6 popular classes sort by number of class taken
         app.get('/instructors/popular', async (req, res) => {
+        
           const pipeline = [
+            {
+                $match: { role: 'instructor' } // Filter by role 'instructor'
+            },
               {
                   $lookup: {
                       from: "classes",
@@ -344,6 +348,9 @@ app.put('/classes/feedback/:id',verifyJWT,verifyAdmin, async (req, res) => {
           const instructors = await userCollection.aggregate(pipeline).toArray();
           res.send(instructors);
       });
+
+    
+  
 
 
 
