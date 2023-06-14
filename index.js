@@ -290,44 +290,12 @@ app.put('/classes/feedback/:id',verifyJWT,verifyAdmin, async (req, res) => {
 
 
 // ! instructor related apis
-        // for getting all the instructors
-        app.get('/instructors', async (req, res) => {
-          const pipeline = [
-              {
-                  $lookup: {
-                      from: "classes",
-                      localField: "email",
-                      foreignField: "instructorEmail",
-                      as: "classes",
-                  },
-              },
-              {
-                  $project: {
-                      _id: 0,
-                      name: 1,
-                      email: 1,
-                      photoURL: 1,
-                      numberOfClasses: {
-                          $cond: {
-                              if: { $isArray: "$classes" },
-                              then: { $size: "$classes" },
-                              else: 0,
-                          },
-                      },
-                      classes: {
-                          $cond: {
-                              if: { $isArray: "$classes" },
-                              then: "$classes.name",
-                              else: [],
-                          },
-                      },
-                  },
-              },
-          ];
-
-          const instructors = await userCollection.aggregate(pipeline).toArray();
-          res.send(instructors);
-      });
+    // get all instructors by role
+    app.get('/instructors', async (req, res) => {
+      const query = { role: 'instructor' }
+      const result = await userCollection.find(query).toArray()
+      res.send(result)
+})
 
 
         // getting the first 6 popular classes sort by number of class taken
