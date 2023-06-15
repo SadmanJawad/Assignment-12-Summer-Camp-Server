@@ -156,7 +156,7 @@ app.get('/users/instructor/:email', verifyJWT,verifyInstructor, async (req, res)
 
     });
 
- // setting  a user role to instructor
+ // setting  a user role to instructor 
  app.patch('/users/instructor/:id', async (req, res) => {
   const id = req.params.id;
   console.log(id);
@@ -194,27 +194,6 @@ app.post('/classes', async (req, res) => {
   res.send(result);
 });
 
-
-
- // getting the first 6 popular classes sort by number of enrolled students
- app.get('/popular-classes', async (req, res) => {
-  try {
-      const popularClasses = await classCollection.find().sort({ numberOfStudents: -1 }).limit(6).toArray();
-      res.send(popularClasses);
-  } catch (err) {
-      console.error(err);
-      res.status(400).send('Internal server error');
-  }
-});
-
-  // get classes according to the instructor email
-  app.get('/classes/:email',verifyJWT, verifyInstructor, async (req, res) => {
-    const email = req.params.email;
-    const result = await classCollection.find({ instructorEmail: email }).toArray();
-    res.send(result);
-});
-
-
  // changing class  to approved put method
  app.put('/classes/approved/:id',verifyJWT, verifyAdmin, async (req, res) => {
   const id = req.params.id;
@@ -227,18 +206,28 @@ app.post('/classes', async (req, res) => {
   const result = await classCollection.updateOne(filter, updateDoc);
   res.send(result);
 });
-// changing class to deny , put method
-app.put('/classes/denied/:id',verifyJWT, verifyAdmin, async (req, res) => {
-  const id = req.params.id;
-  const filter = { _id: new ObjectId(id) };
-  const updateDoc = {
-      $set: {
-          status: 'denied'
-      },
-  };
-  const result = await classCollection.updateOne(filter, updateDoc);
-  res.send(result);
-});
+
+
+ // get the first 6 popular class sort by number of enrolled students
+ app.get('/popular-classes', async (req, res) => {
+    try {
+        const popularClasses = await classCollection.find().sort({ numberOfStudents: -1 }).limit(6).toArray();
+        res.send(popularClasses);
+    } catch (err) {
+        console.error(err);
+        res.status(400).send('Internal server error');
+    }
+  });
+  
+    // get classes according to the instructor email
+    app.get('/classes/:email',verifyJWT, verifyInstructor, async (req, res) => {
+      const email = req.params.email;
+      const result = await classCollection.find({ instructorEmail: email }).toArray();
+      res.send(result);
+  });
+
+
+
 // inserting feedback to a class
 app.put('/classes/feedback/:id',verifyJWT,verifyAdmin, async (req, res) => {
   const id = req.params.id;
@@ -252,6 +241,22 @@ app.put('/classes/feedback/:id',verifyJWT,verifyAdmin, async (req, res) => {
   const result = await classCollection.updateOne(filter, updateDoc);
   res.send(result);
 });
+
+
+
+// change class to deny , put methods
+
+app.put('/classes/denied/:id',verifyJWT, verifyAdmin, async (req, res) => {
+    const id = req.params.id;
+    const filter = { _id: new ObjectId(id) };
+    const updateDoc = {
+        $set: {
+            status: 'denied'
+        },
+    };
+    const result = await classCollection.updateOne(filter, updateDoc);
+    res.send(result);
+  });
 
 // ! selected classes related apis
         // post selected class to database
@@ -290,7 +295,7 @@ app.put('/classes/feedback/:id',verifyJWT,verifyAdmin, async (req, res) => {
 
 
 // ! instructor related apis
-    // get all instructors by role
+    // get all instructors role
     app.get('/instructors', async (req, res) => {
       const query = { role: 'instructor' }
       const result = await userCollection.find(query).toArray()
@@ -349,7 +354,28 @@ app.put('/classes/feedback/:id',verifyJWT,verifyAdmin, async (req, res) => {
           res.send(instructors);
       });
 
-    
+       // store payment info in enrolled and delete the existing class from select
+       app.post('/enrolled',verifyJWT, async (req, res) => {
+        try {
+            const payment = req.body;
+            const result = await enrolledCollection.insertOne(payment);
+
+            // Delete the paid class data from the selected collection
+            const { enrolledClass } = payment;
+            const query = { _id: new ObjectId(enrolledClass._id) };
+            const deleteResult = await selectedCollection.deleteOne(query);
+
+            // Update the available seats in the classes collection
+            const classQuery = { _id: new ObjectId(enrolledClass.classId) };
+            const classUpdate = { $inc: { availableSeats: -1 } };
+            const classUpdateResult = await classCollection.updateOne(classQuery, classUpdate);
+
+            res.send({ paymentResult: result, deleteResult, classUpdateResult });
+        } catch (error) {
+            console.error('Error saving payment and deleting class data:', error);
+            res.status(500).send('Failed to save payment and delete class data');
+        }
+    });
   
 
 
@@ -372,28 +398,7 @@ app.put('/classes/feedback/:id',verifyJWT,verifyAdmin, async (req, res) => {
     });
 
 
-     // to store payment info in enrolled and deleting the existing class from selected
-     app.post('/enrolled',verifyJWT, async (req, res) => {
-        try {
-            const payment = req.body;
-            const result = await enrolledCollection.insertOne(payment);
-
-            // Delete the paid class data from the selected collection
-            const { enrolledClass } = payment;
-            const query = { _id: new ObjectId(enrolledClass._id) };
-            const deleteResult = await selectedCollection.deleteOne(query);
-
-            // Update the available seats in the classes collection
-            const classQuery = { _id: new ObjectId(enrolledClass.classId) };
-            const classUpdate = { $inc: { availableSeats: -1 } };
-            const classUpdateResult = await classCollection.updateOne(classQuery, classUpdate);
-
-            res.send({ paymentResult: result, deleteResult, classUpdateResult });
-        } catch (error) {
-            console.error('Error saving payment and deleting class data:', error);
-            res.status(500).send('Failed to save payment and delete class data');
-        }
-    });
+  
 
    // getting enrolled class by email
         app.get('/enrolled/:email', async (req, res) => {
@@ -420,11 +425,11 @@ run().catch(console.dir);
 
 app.get('/', (req, res) => {
 
-    res.send('Sports Academy is running!');
+    res.send('Sports Academy is run ning!');
 
 })
 
 app.listen(port, () => {
-    console.log(`Sports Academy is running on port ${port}`);
+    console.log(`Sports Academyty is running on port ${port}`);
 })
 
