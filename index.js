@@ -51,7 +51,7 @@ async function run() {
     const userCollection = client.db("frippoDb").collection("user");
     const classCollection = client.db("frippoDb").collection("classes");
     const selectedCollection = client.db("frippoDb").collection("selected");
-    const enrolledCollection = client.db("MelodyMaster").collection("enrolled");
+    const enrolledCollection = client.db("frippoDb").collection("enrolled");
 
 
 
